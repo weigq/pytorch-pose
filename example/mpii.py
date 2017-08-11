@@ -21,6 +21,7 @@ from pose.utils.transforms import fliplr, flip_back
 import pose.models as models
 import pose.datasets as datasets
 
+imagePath = '/home/guoqiang/hg_train/data/mpii/images/'
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -74,12 +75,12 @@ def main(args):
 
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', 'data/mpii/images'),
+        datasets.Mpii('data/mpii/mpii_annotations.json', imagePath),
         batch_size=args.train_batch, shuffle=True,
         num_workers=args.workers, pin_memory=True)
     
     val_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', 'data/mpii/images', train=False),
+        datasets.Mpii('data/mpii/mpii_annotations.json', imagePath, train=False),
         batch_size=args.test_batch, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
@@ -272,6 +273,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
     return losses.avg, acces.avg, predictions
 
 if __name__ == '__main__':
+    
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--arch', '-a', metavar='ARCH', default='hg8',
                         choices=model_names,
