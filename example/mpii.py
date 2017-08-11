@@ -27,6 +27,7 @@ model_names = sorted(name for name in models.__dict__
 
 idx = [1,2,3,4,5,6,11,12,15,16]
 
+
 best_acc = 0
 
 def main(args):
