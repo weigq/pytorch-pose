@@ -21,13 +21,12 @@ from pose.utils.transforms import fliplr, flip_back
 import pose.models as models
 import pose.datasets as datasets
 
-imagePath = '/home/guoqiang/hg_train/data/mpii/images/'
+
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
 idx = [1,2,3,4,5,6,11,12,15,16]
-
 
 best_acc = 0
 
@@ -48,9 +47,9 @@ def main(args):
     criterion = torch.nn.MSELoss(size_average=True).cuda()
 
     optimizer = torch.optim.RMSprop(model.parameters(), 
-                                lr=args.lr,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+                                lr = args.lr,
+                                momentum = args.momentum,
+                                weight_decay = args.weight_decay)
 
     # optionally resume from a checkpoint
     title = 'mpii-' + args.arch
@@ -72,16 +71,17 @@ def main(args):
         logger.set_names(['Train Loss', 'Val Loss', 'Val Acc'])
 
     cudnn.benchmark = True
+
     print('    Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
 
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', imagePath),
+        datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
         batch_size=args.train_batch, shuffle=True,
         num_workers=args.workers, pin_memory=True)
     
     val_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', imagePath, train=False),
+        datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
         batch_size=args.test_batch, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
@@ -91,12 +91,14 @@ def main(args):
         save_pred(predictions, checkpoint=args.checkpoint)
         return
 
-    for epoch in range(args.start_epoch, args.epochs):
+    for epoch in range(args.start_epoch, args.Epochs):
+        # lr decay
         lr = adjust_learning_rate(optimizer, epoch, args.lr)
-        print('\nEpoch: %d | LR: %.8f' % (epoch + 1, lr)) 
+
+        print('\nEpoch: %d | lr: %.8f' % (epoch, lr)) 
 
         # train for one epoch
-        train_loss = train(train_loader, model, criterion, optimizer, epoch, args.debug)
+        train_loss = train(train_loader, model, criterion, optimizer, epoch - 1, args.debug)
 
         # evaluate on validation set
         valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.debug, args.flip)
@@ -108,12 +110,12 @@ def main(args):
         is_best = valid_acc > best_acc
         best_acc = max(valid_acc, best_acc)
         save_checkpoint({
-            'epoch': epoch + 1,
+            'epoch': epoch,
             'arch': args.arch,
             'state_dict': model.state_dict(),
             'best_acc': best_acc,
             'optimizer' : optimizer.state_dict(),
-        }, predictions, is_best, checkpoint=args.checkpoint)
+        }, predictions, is_best, checkpoint = args.checkpoint)
 
     logger.close()
     logger.plot()
@@ -275,38 +277,42 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
 
 if __name__ == '__main__':
     
-    parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='hg8',
-                        choices=model_names,
-                        help='model architecture: ' +
-                            ' | '.join(model_names) +
-                            ' (default: resnet18)')
-    parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
-                        help='number of data loading workers (default: 4)')
-    parser.add_argument('--epochs', default=90, type=int, metavar='N',
-                        help='number of total epochs to run')
-    parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
-                        help='manual epoch number (useful on restarts)')
-    parser.add_argument('--train-batch', default=6, type=int, metavar='N',
-                        help='train batchsize')
-    parser.add_argument('--test-batch', default=6, type=int, metavar='N',
-                        help='test batchsize')
-    parser.add_argument('--lr', '--learning-rate', default=2.5e-4, type=float,
-                        metavar='LR', help='initial learning rate')
-    parser.add_argument('--momentum', default=0, type=float, metavar='M',
-                        help='momentum')
-    parser.add_argument('--weight-decay', '--wd', default=0, type=float,
-                        metavar='W', help='weight decay (default: 1e-4)')
-    parser.add_argument('--print-freq', '-p', default=10, type=int,
-                        metavar='N', help='print frequency (default: 10)')
-    parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
-                        help='path to save checkpoint (default: checkpoint)')
-    parser.add_argument('--resume', default='', type=str, metavar='PATH',
-                        help='path to latest checkpoint (default: none)')
-    parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
-                        help='evaluate model on validation set')
-    parser.add_argument('-d', '--debug', dest='debug', action='store_true',
-                        help='show intermediate results')
-    parser.add_argument('-f', '--flip', dest='flip', action='store_true',
-                        help='flip the input during validation')
+    parser = argparse.ArgumentParser(description='hg_pytorch training')
+
+    ## General options
+    parser.add_argument('-dataPath',  default = '/home/guoqiang/hg_train/data/mpii/images/', 
+                                      help = 'the path to images data')
+
+    ## Model options
+    parser.add_argument('-arch',      default = 'hg4', metavar = 'ARCH', choices = model_names, 
+                                      help = 'model architecture: '+' | '.join(model_names)+' (default: resnet18)')
+    parser.add_argument('-j', '--workers', default = 1, type = int, metavar = 'N',
+                                      help = 'number of data loading workers (default: 4)')
+    parser.add_argument('--Epochs',   default = 100, type = int, metavar='EPOCH',
+                                      help = 'number of total Epochs to run')
+    parser.add_argument('--start-epoch', default = 1, type = int, 
+                                      help = 'manual epoch number (useful for continue)')
+    parser.add_argument('--train-batch', default = 6, type = int, 
+                                      help = 'train batchsize')
+    parser.add_argument('--test-batch', default = 6, type = int, 
+                                      help = 'test batchsize')
+    parser.add_argument('--lr',       default = 2.5e-4, type = float,
+                                      help = 'initial learning rate')
+    parser.add_argument('--momentum', default = 0, type = float,
+                                      help = 'momentum')
+    parser.add_argument('--weight-decay', '--wd', default = 0, type = float,
+                                      help = 'weight decay (default: 1e-4)')
+    parser.add_argument('--print-freq', '-p', default = 10, type = int,
+                                      help = 'print frequency (default: 10)')
+    parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar='PATH',
+                                      help = 'path to save checkpoint (default: checkpoint)')
+    parser.add_argument('--resume',   default = '', type = str, metavar='PATH',
+                                      help = 'path to latest checkpoint (default: none)')
+    parser.add_argument('-e', '--evaluate', dest = 'evaluate', action = 'store_true',
+                                      help = 'evaluate model on validation set')
+    parser.add_argument('-d', '--debug', dest = 'debug', action = 'store_true',
+                                      help = 'show intermediate results')
+    parser.add_argument('-f', '--flip', dest = 'flip', action = 'store_true',
+                                      help = 'flip the input during validation')
+
     main(parser.parse_args())
