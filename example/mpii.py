@@ -26,6 +26,7 @@ model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
+# to calaulate acc
 idx = [1,2,3,4,5,6,11,12,15,16]
 
 best_acc = 0
