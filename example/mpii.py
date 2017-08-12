@@ -68,23 +68,30 @@ def main(args):
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
     else:        
+        # open the log file 
         logger = Logger(join(args.checkpoint, 'log.txt'), title=title)
+        # set names of log file 
         logger.set_names(['Train Loss', 'Val Loss', 'Val Acc'])
 
+    # using the fastest algorithm
     cudnn.benchmark = True
 
-    print('    Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
+    print('    Total params size: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
 
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
-        batch_size=args.train_batch, shuffle=True,
-        num_workers=args.workers, pin_memory=True)
+        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
+        batch_size = args.train_batch, 
+        shuffle = True,
+        num_workers = args.workers, 
+        pin_memory=True)
     
     val_loader = torch.utils.data.DataLoader(
-        datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
-        batch_size=args.test_batch, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
+        batch_size = args.test_batch, 
+        shuffle = False,
+        num_workers = args.workers, 
+        pin_memory=True)
 
     if args.evaluate:
         print('\nEvaluation only') 

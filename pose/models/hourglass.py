@@ -13,15 +13,15 @@ __all__ = ['HourglassNet', 'hg1', 'hg2', 'hg4', 'hg8']
 class Bottleneck(nn.Module):
     expansion = 2
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, outplanes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
+
         self.bn1 = nn.BatchNorm2d(inplanes)
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=True)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=True)
-        self.bn3 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 2, kernel_size=1, bias=True)
+        self.conv1 = nn.Conv2d(inplanes, outplanes, kernel_size=1, bias=True)
+        self.bn2 = nn.BatchNorm2d(outplanes)
+        self.conv2 = nn.Conv2d(outplanes, outplanes, kernel_size=3, stride=stride, padding=1, bias=True)
+        self.bn3 = nn.BatchNorm2d(outplanes)
+        self.conv3 = nn.Conv2d(outplanes, outplanes * 2, kernel_size=1, bias=True)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -43,7 +43,8 @@ class Bottleneck(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
-
+ 
+        # element-wise add
         out += residual
 
         return out
@@ -101,17 +102,21 @@ class HourglassNet(nn.Module):
         self.num_feats = 128
         self.num_stacks = num_stacks
 
+  
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
         self.bn1 = nn.BatchNorm2d(self.inplanes) 
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self._make_residual(block, self.inplanes, 1)
-        self.layer2 = self._make_residual(block, self.inplanes, 1)
-        self.layer3 = self._make_residual(block, self.num_feats, 1)
+
+        self.layer1 = self._make_residual(block, self.inplanes, blocks = 1)
+        self.layer2 = self._make_residual(block, self.inplanes, blocks = 1)
+        self.layer3 = self._make_residual(block, self.num_feats, blocks = 1)
+
         self.maxpool = nn.MaxPool2d(2, stride=2)
 
         # build hourglass modules
         ch = self.num_feats*block.expansion
         hg, res, fc, score, fc_, score_ = [], [], [], [], [], []
+        
         for i in range(num_stacks):
             hg.append(Hourglass(block, num_blocks, self.num_feats, 4))
             res.append(self._make_residual(block, self.num_feats, num_blocks))
@@ -127,13 +132,12 @@ class HourglassNet(nn.Module):
         self.fc_ = nn.ModuleList(fc_) 
         self.score_ = nn.ModuleList(score_)
 
-    def _make_residual(self, block, planes, blocks, stride=1):
+    def _make_residual(self, block, planes, blocks = 1, stride=1):
+        '''a residual module, which returns layers with 2*planes features'''
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=True),
-            )
+                nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=True))
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample))
