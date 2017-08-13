@@ -80,14 +80,16 @@ def main(args):
 
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
+        # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
+        dataset = datasets.Mpii('data/mpii/anno.json', args.dataPath),
         batch_size = args.train_batch, 
         shuffle = True,
         num_workers = args.workers, 
         pin_memory=True)
     
     val_loader = torch.utils.data.DataLoader(
-        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
+        # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
+        dataset = datasets.Mpii('data/mpii/anno.json', args.dataPath, train=False),
         batch_size = args.test_batch, 
         shuffle = False,
         num_workers = args.workers, 
