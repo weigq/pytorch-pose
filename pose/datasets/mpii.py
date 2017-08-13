@@ -47,6 +47,7 @@ class Mpii(data.Dataset):
                 a = self.anno[index]
                 img_path = os.path.join(self.img_folder, a['img_paths'])
                 img = load_image(img_path) # CxHxW
+
                 mean += img.view(img.size(0), -1).mean(1)
                 std += img.view(img.size(0), -1).std(1)
             mean /= len(self.train)
@@ -72,6 +73,7 @@ class Mpii(data.Dataset):
             a = self.anno[self.valid[index]]
 
         img_path = os.path.join(self.img_folder, a['img_paths'])
+
         pts = torch.Tensor(a['joint_self'])
         pts[:,0:2] -= 1 # Convert pts to zero based
 
@@ -88,7 +90,7 @@ class Mpii(data.Dataset):
         img = load_image(img_path) # CxHxW
 
         r = 0
-        if self.is_train    :
+        if self.is_train:
             s = s*torch.randn(1).mul_(sf).add_(1).clamp(1-sf,1+sf)[0]
             r = torch.randn(1).mul_(rf).clamp(-2*rf,2*rf)[0] if random.random() <= 0.9 else 0
 
@@ -105,6 +107,7 @@ class Mpii(data.Dataset):
         # Generate ground truth
         tpts = pts.clone()
         target = torch.zeros(nparts, self.out_res, self.out_res)
+        
         for i in range(nparts):
             if tpts[i, 2] > 0:
                 tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2], c, s, [self.out_res, self.out_res], rot=r))

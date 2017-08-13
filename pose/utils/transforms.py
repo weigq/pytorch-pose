@@ -118,6 +118,7 @@ def transform_preds(coords, center, scale, res):
     return coords
 
 def crop(img, center, scale, res, rot=0):
+    # img: H*W*C
     img = im_to_numpy(img)
 
     # Upper left point

@@ -140,7 +140,10 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
     end = time.time()
 
     gt_win, pred_win = None, None
+
     bar = Bar('Processing', max=len(train_loader))
+    print("the length of train_loader: {}".format(len(train_loader)))
+
     for i, (inputs, target) in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
@@ -154,6 +157,7 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
         output = model(input_var)
 
         loss = criterion(output[0], target_var)
+        print("length of output:{}".format(len(output)))
         for j in range(1, len(output)):
             loss += criterion(output[j], target_var)
 
@@ -215,6 +219,8 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
     gt_win, pred_win = None, None
     end = time.time()
     bar = Bar('Processing', max=len(val_loader))
+    print("length of output:{}".format(len(val_loader)))
+
     for i, (inputs, target, meta) in enumerate(val_loader): 
         target = target.cuda(async=True)
 
@@ -223,6 +229,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
 
         # compute output
         output = model(input_var)
+        # score_map: 16*64*64
         score_map = output[-1].data.cpu()
         if flip:
             flip_input_var = torch.autograd.Variable(
@@ -232,12 +239,13 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
             flip_output_var = model(flip_input_var)
             flip_output = flip_back(flip_output_var[-1].data.cpu())
             score_map += flip_output
-
+        #print("scor")
 
 
         loss = 0
         for o in output:
             loss += criterion(o, target_var)
+        # target : 16*64*64
         acc = accuracy(score_map.cuda(), target, idx)
 
         # generate predictions
