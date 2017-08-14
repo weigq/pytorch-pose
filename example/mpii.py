@@ -81,7 +81,7 @@ def main(args):
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
         # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
-        dataset = datasets.Mpii('data/mpii/anno.json', args.dataPath),
+        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
         batch_size = args.train_batch, 
         shuffle = True,
         num_workers = args.workers, 
@@ -89,7 +89,7 @@ def main(args):
     
     val_loader = torch.utils.data.DataLoader(
         # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
-        dataset = datasets.Mpii('data/mpii/anno.json', args.dataPath, train=False),
+        dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
         batch_size = args.test_batch, 
         shuffle = False,
         num_workers = args.workers, 
@@ -279,7 +279,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .4f}'.format(
+        bar.suffix  = '({batch}/{size}) Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc: .9f}'.format(
                     batch=i + 1,
                     size=len(val_loader),
                     bt=batch_time.avg,
