@@ -22,7 +22,12 @@ def im_to_torch(img):
 
 def load_image(img_path):
     # H x W x C => C x H x W
-    return im_to_torch(scipy.misc.imread(img_path))/255  
+    img = scipy.misc.imread(img_path)
+    #print("type: {}".format(type(img)))
+    #print("size:{}".format(img.shape))
+
+    #raw_input(">>>")
+    return im_to_torch(img)/255
 
 def resize(img, owidth, oheight):
     img = im_to_numpy(img)
@@ -36,7 +41,7 @@ def resize(img, owidth, oheight):
     return img
 
 # =============================================================================
-# Helpful functions generating groundtruth labelmap 
+# Helpful functions generating groundtruth labelmap
 # =============================================================================
 
 def gaussian(shape=(7,7),sigma=1):
@@ -51,7 +56,7 @@ def gaussian(shape=(7,7),sigma=1):
     return to_torch(h).float()
 
 def draw_gaussian(img, pt, sigma):
-    # Draw a 2D gaussian 
+    # Draw a 2D gaussian
     # Adopted from https://github.com/anewell/pose-hg-train/blob/master/src/pypose/draw.py
     img = to_numpy(img)
 
@@ -105,7 +110,7 @@ def imshow(img):
 
 def show_joints(img, pts):
     imshow(img)
-    
+
     for i in range(pts.size(0)):
         if pts[i, 2] > 0:
             plt.plot(pts[i, 0], pts[i, 1], 'yo')
@@ -123,7 +128,7 @@ def show_sample(inputs, target):
         for p in range(num_joints):
             tgt = inp*0.5 + color_heatmap(target[n,p,:,:])*0.5
             out = torch.cat((out, tgt), 2)
-        
+
         imshow(out)
         plt.show()
 

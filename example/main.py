@@ -4,6 +4,7 @@ import argparse
 import time
 import matplotlib.pyplot as plt
 
+import os
 import torch
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
@@ -15,6 +16,7 @@ from pose import Bar
 from pose.utils.logger import Logger
 from pose.utils.evaluation import accuracy, AverageMeter, final_preds
 from pose.utils.misc import save_checkpoint, save_pred, adjust_learning_rate
+
 from pose.utils.osutils import mkdir_p, isfile, isdir, join
 from pose.utils.imutils import batch_with_heatmap
 from pose.utils.transforms import fliplr, flip_back
@@ -44,17 +46,24 @@ def main(args):
     print("==> creating model '{}'".format(args.arch))
     model = models.__dict__[args.arch](num_classes=16)
 
+    # multi-GPU
     model = torch.nn.DataParallel(model).cuda()
 
-    # define loss function (criterion) and optimizer
-    criterion = torch.nn.MSELoss(size_average=True).cuda()
+    # the total number of parameters
+    print('    Total params size: %.2fM' % (sum(para.numel() for para in model.parameters())/1000000.0))
 
+    # define criterion and optimizer
+    criterion = torch.nn.MSELoss(size_average=True).cuda()
     optimizer = torch.optim.RMSprop(model.parameters(),
                                 lr = args.lr,
                                 momentum = args.momentum,
                                 weight_decay = args.weight_decay)
 
     # optionally resume from a checkpoint
+
+
+
+    # --------
     title = 'mpii-' + args.arch
     if args.resume:
         if isfile(args.resume):
@@ -69,20 +78,20 @@ def main(args):
             logger = Logger(join(args.checkpoint, 'log.txt'), title=title, resume=True)
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
+    # --------
+
+
     else:
         # open the log file
-        logger = Logger(join(args.checkpoint, 'log.txt'), title=title)
+        logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
         # set names of log file
-        logger.set_names(['Train Loss', 'Val Loss', 'Val Acc'])
+        logger.set_names(['train-loss', 'val-loss', 'val-acc'])
 
     # using the fastest algorithm
     cudnn.benchmark = True
 
-    print('    Total params size: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
-
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
         dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
         batch_size = args.train_batch,
         shuffle = True,
@@ -90,7 +99,6 @@ def main(args):
         pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
         dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
         batch_size = args.test_batch,
         shuffle = False,
@@ -131,7 +139,7 @@ def main(args):
 
     logger.close()
     logger.plot()
-    savefig(os.path.join(args.checkpoint, 'log.eps'))
+    plt.savefig(os.path.join(args.checkpoint, 'log.eps'))
 
 def train(train_loader, model, criterion, optimizer, epoch, debug=False):
     batch_time = AverageMeter()
