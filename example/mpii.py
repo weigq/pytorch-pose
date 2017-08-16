@@ -31,6 +31,8 @@ idx = [1,2,3,4,5,6,11,12,15,16]
 
 best_acc = 0
 
+
+
 def main(args):
     global best_acc
 
@@ -47,7 +49,7 @@ def main(args):
     # define loss function (criterion) and optimizer
     criterion = torch.nn.MSELoss(size_average=True).cuda()
 
-    optimizer = torch.optim.RMSprop(model.parameters(), 
+    optimizer = torch.optim.RMSprop(model.parameters(),
                                 lr = args.lr,
                                 momentum = args.momentum,
                                 weight_decay = args.weight_decay)
@@ -67,10 +69,10 @@ def main(args):
             logger = Logger(join(args.checkpoint, 'log.txt'), title=title, resume=True)
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
-    else:        
-        # open the log file 
+    else:
+        # open the log file
         logger = Logger(join(args.checkpoint, 'log.txt'), title=title)
-        # set names of log file 
+        # set names of log file
         logger.set_names(['Train Loss', 'Val Loss', 'Val Acc'])
 
     # using the fastest algorithm
@@ -82,21 +84,21 @@ def main(args):
     train_loader = torch.utils.data.DataLoader(
         # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
         dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
-        batch_size = args.train_batch, 
+        batch_size = args.train_batch,
         shuffle = True,
-        num_workers = args.workers, 
+        num_workers = args.workers,
         pin_memory=True)
-    
+
     val_loader = torch.utils.data.DataLoader(
         # dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
         dataset = datasets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
-        batch_size = args.test_batch, 
+        batch_size = args.test_batch,
         shuffle = False,
-        num_workers = args.workers, 
+        num_workers = args.workers,
         pin_memory=True)
 
     if args.evaluate:
-        print('\nEvaluation only') 
+        print('\nEvaluation only')
         loss, acc, predictions = validate(val_loader, model, criterion, args.debug, args.flip)
         save_pred(predictions, checkpoint=args.checkpoint)
         return
@@ -105,7 +107,7 @@ def main(args):
         # lr decay
         lr = adjust_learning_rate(optimizer, epoch, args.lr)
 
-        print('\nEpoch: %d | lr: %.8f' % (epoch, lr)) 
+        print('\nEpoch: %d | lr: %.8f' % (epoch, lr))
 
         # train for one epoch
         train_loss = train(train_loader, model, criterion, optimizer, epoch - 1, args.debug)
@@ -159,7 +161,7 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
         output = model(input_var)
 
         loss = criterion(output[0], target_var)
-        print("length of output:{}".format(len(output)))
+        # print("length of output:{}".format(len(output)))
         for j in range(1, len(output)):
             loss += criterion(output[j], target_var)
 
@@ -223,7 +225,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
     bar = Bar('Processing', max=len(val_loader))
     print("length of output:{}".format(len(val_loader)))
 
-    for i, (inputs, target, meta) in enumerate(val_loader): 
+    for i, (inputs, target, meta) in enumerate(val_loader):
         target = target.cuda(async=True)
 
         input_var = torch.autograd.Variable(inputs.cuda(), volatile=True)
@@ -235,7 +237,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
         score_map = output[-1].data.cpu()
         if flip:
             flip_input_var = torch.autograd.Variable(
-                    torch.from_numpy(fliplr(inputs.clone().numpy())).float().cuda(), 
+                    torch.from_numpy(fliplr(inputs.clone().numpy())).float().cuda(),
                     volatile=True
                 )
             flip_output_var = model(flip_input_var)
@@ -294,25 +296,25 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
     return losses.avg, acces.avg, predictions
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser(description='hg_pytorch training')
 
     ## General options
-    parser.add_argument('-dataPath',  default = '/home/guoqiang/hg_train/data/mpii/images/', 
+    parser.add_argument('-dataPath',  default = '/home/guoqiang/hg_train/data/mpii/images/',
                                       help = 'the path to images data')
 
     ## Model options
-    parser.add_argument('-arch',      default = 'hg4', metavar = 'ARCH', choices = model_names, 
+    parser.add_argument('-arch',      default = 'hg4', metavar = 'ARCH', choices = model_names,
                                       help = 'model architecture: '+' | '.join(model_names)+' (default: resnet18)')
     parser.add_argument('-j', '--workers', default = 1, type = int, metavar = 'N',
                                       help = 'number of data loading workers (default: 4)')
-    parser.add_argument('--Epochs',   default = 100, type = int, metavar='EPOCH',
+    parser.add_argument('--Epochs',   default = 50, type = int, metavar='EPOCH',
                                       help = 'number of total Epochs to run')
-    parser.add_argument('--start-epoch', default = 1, type = int, 
+    parser.add_argument('--start-epoch', default = 1, type = int,
                                       help = 'manual epoch number (useful for continue)')
-    parser.add_argument('--train-batch', default = 6, type = int, 
+    parser.add_argument('--train-batch', default = 6, type = int,
                                       help = 'train batchsize')
-    parser.add_argument('--test-batch', default = 6, type = int, 
+    parser.add_argument('--test-batch', default = 6, type = int,
                                       help = 'test batchsize')
     parser.add_argument('--lr',       default = 2.5e-4, type = float,
                                       help = 'initial learning rate')
