@@ -44,7 +44,7 @@ class Mpii(data.Dataset):
                 self.valid.append(idx)
             else:
                 self.train.append(idx)
-        self.train = self.train[0:3000]
+        self.train = self.train[0:4000]
         self.valid = self.valid[0:1000]
 
         self.mean, self.std = self._get_param()
@@ -52,15 +52,17 @@ class Mpii(data.Dataset):
     def _get_param(self):
         paramFile = './data/mpii/mean.pth.tar'
         if isfile(paramFile):
-            param = torch.load(paramFile)
-        else:
+            #param = torch.load(paramFile)
+            #i = 1
+        #else:
             mean = torch.zeros(3)
             std = torch.zeros(3)
             print("len of train: {}".format(len(self.train)))
             i = 1
             for index in self.train:
                 i += 1
-                print("i = {}\n".format(i-1))
+                if i%500 == 0:
+                    print("i = {}\n".format(i-1))
                 ann = self.anno[index]
                 img_path = os.path.join(self.img_path, ann['img_paths'])
                 img = load_image(img_path) # CxHxW
@@ -74,9 +76,9 @@ class Mpii(data.Dataset):
                 'std': std,
                 }
             torch.save(param, paramFile)
-        if self.is_train:
-            print('    Mean: %.4f, %.4f, %.4f' % (param['mean'][0], param['mean'][1], param['mean'][2]))
-            print('    Std:  %.4f, %.4f, %.4f' % (param['std'][0], param['std'][1], param['std'][2]))
+        #if self.is_train:
+        print('    Mean: %.4f, %.4f, %.4f' % (param['mean'][0], param['mean'][1], param['mean'][2]))
+        print('    Std:  %.4f, %.4f, %.4f' % (param['std'][0], param['std'][1], param['std'][2]))
         return param['mean'], param['std']
 
 
@@ -115,7 +117,7 @@ class Mpii(data.Dataset):
                 img = torch.from_numpy(fliplr(img.numpy())).float()
                 pts = shufflelr(pts, width=img.size(2), dataset='mpii')
                 c[0] = img.size(2) - c[0]
-                
+
 
         # Prepare image and groundtruth map
         inp = crop(img, c, s, [self.inp_res, self.inp_res], rot=r)
@@ -135,8 +137,11 @@ class Mpii(data.Dataset):
                 target[i] = draw_gaussian(target[i], tpts[i], self.sigma)
 
         # Meta info
-        meta = {'index' : index, 'center' : c, 'scale' : s,
-        'pts' : pts, 'tpts' : tpts}
+        meta = {'index' : index,
+                'center' : c,
+                'scale' : s,
+                'pts' : pts,
+                'tpts' : tpts}
 
         if self.is_train:
 

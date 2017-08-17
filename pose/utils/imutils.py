@@ -57,18 +57,21 @@ def gaussian(shape=(7,7),sigma=1):
     h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
     return to_torch(h).float()
 
-def draw_gaussian(img, pt, sigma):
-    # Draw a 2D gaussian
+def draw_gaussian(imgIn, pt, sigma):
+    '''
+    Draw a 2D gaussian
+    imgIn: tensot
+    '''
     # Adopted from https://github.com/anewell/pose-hg-train/blob/master/src/pypose/draw.py
-    img = to_numpy(img)
+    img = imgIn.cpu().numpy()
 
     # Check that any part of the gaussian is in-bounds
     ul = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
     br = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
     if (ul[0] >= img.shape[1] or ul[1] >= img.shape[0] or
             br[0] < 0 or br[1] < 0):
-        # If not, just return the image as is
-        return to_torch(img)
+        # If not, just return the image as is in Tensor type
+        return torch.from_numpy(img)
 
     # Generate gaussian
     size = 6 * sigma + 1
@@ -86,7 +89,7 @@ def draw_gaussian(img, pt, sigma):
     img_y = max(0, ul[1]), min(br[1], img.shape[0])
 
     img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
-    return to_torch(img)
+    return torch.from_numpy(img)
 
 # =============================================================================
 # Helpful display functions

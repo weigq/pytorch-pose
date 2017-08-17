@@ -168,8 +168,8 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
         # compute output
         output = model(input_var)
 
+        # Calculate intermediate loss
         loss = criterion(output[0], target_var)
-        # print("length of output:{}".format(len(output)))
         for j in range(1, len(output)):
             loss += criterion(output[j], target_var)
 
