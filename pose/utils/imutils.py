@@ -14,7 +14,8 @@ def im_to_numpy(img):
 
 def im_to_torch(img):
     img = np.transpose(img, (2, 0, 1)) # C*H*W
-    img = to_torch(img).float()
+    img = torch.from_numpy(img).float()
+    # img = to_torch(img).float()
     # normalization
     if img.max() > 1:
         img /= 255
@@ -23,11 +24,12 @@ def im_to_torch(img):
 def load_image(img_path):
     # H x W x C => C x H x W
     img = scipy.misc.imread(img_path)
-    #print("type: {}".format(type(img)))
-    #print("size:{}".format(img.shape))
-
-    #raw_input(">>>")
-    return im_to_torch(img)/255
+    img = np.transpose(img, (2, 0, 1)) # C*H*W
+    img = torch.from_numpy(img).float()
+    # normalization
+    if img.max() > 1:
+        img /= 255
+    return img
 
 def resize(img, owidth, oheight):
     img = im_to_numpy(img)

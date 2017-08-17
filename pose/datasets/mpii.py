@@ -44,8 +44,8 @@ class Mpii(data.Dataset):
                 self.valid.append(idx)
             else:
                 self.train.append(idx)
-        self.train = self.train[0:3]
-        self.valid = self.valid[0:3]
+        self.train = self.train[0:3000]
+        self.valid = self.valid[0:1000]
 
         self.mean, self.std = self._get_param()
 
@@ -56,7 +56,11 @@ class Mpii(data.Dataset):
         else:
             mean = torch.zeros(3)
             std = torch.zeros(3)
+            print("len of train: {}".format(len(self.train)))
+            i = 1
             for index in self.train:
+                i += 1
+                print("i = {}\n".format(i-1))
                 ann = self.anno[index]
                 img_path = os.path.join(self.img_path, ann['img_paths'])
                 img = load_image(img_path) # CxHxW
@@ -73,7 +77,6 @@ class Mpii(data.Dataset):
         if self.is_train:
             print('    Mean: %.4f, %.4f, %.4f' % (param['mean'][0], param['mean'][1], param['mean'][2]))
             print('    Std:  %.4f, %.4f, %.4f' % (param['std'][0], param['std'][1], param['std'][2]))
-
         return param['mean'], param['std']
 
 
@@ -99,7 +102,7 @@ class Mpii(data.Dataset):
             s = s * 1.25
 
         # For single-person pose estimation with a centered/scaled figure
-        nparts = pts.size(0)
+        nparts = pts.size(0)  # = 16
         img = load_image(img_path) # CxHxW
 
         r = 0
@@ -115,7 +118,8 @@ class Mpii(data.Dataset):
 
         # Prepare image and groundtruth map
         inp = crop(img, c, s, [self.inp_res, self.inp_res], rot=r)
-        inp = color_normalize(inp, self.mean, self.std)
+        #f self.is_train:
+         #  inp = color_normalize(inp, self.mean, self.std)
 
         # Generate ground truth
         tpts = pts.clone()

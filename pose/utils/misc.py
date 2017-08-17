@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import os
 import shutil
-import torch 
+import torch
 import math
 import numpy as np
 import scipy.io
@@ -42,7 +42,7 @@ def save_pred(preds, checkpoint='checkpoint', filename='preds_valid.mat'):
     scipy.io.savemat(filepath, mdict={'preds' : preds})
 
 
-def adjust_learning_rate(optimizer, epoch, lr):
+def LRDecay(optimizer, epoch, lr):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     lr = lr * (0.2 ** (epoch // 30))
     for param_group in optimizer.param_groups:

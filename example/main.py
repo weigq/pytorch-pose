@@ -15,7 +15,7 @@ import torchvision.transforms as transforms
 from pose import Bar
 from pose.utils.logger import Logger
 from pose.utils.evaluation import accuracy, AverageMeter, final_preds
-from pose.utils.misc import save_checkpoint, save_pred, adjust_learning_rate
+from pose.utils.misc import save_checkpoint, save_pred, LRDecay
 
 from pose.utils.osutils import mkdir_p, isfile, isdir, join
 from pose.utils.imutils import batch_with_heatmap
@@ -113,7 +113,7 @@ def main(args):
 
     for epoch in range(args.start_epoch, args.Epochs):
         # lr decay
-        lr = adjust_learning_rate(optimizer, epoch, args.lr)
+        lr = LRDecay(optimizer, epoch, args.lr)
 
         print('\nEpoch: %d | lr: %.8f' % (epoch, lr))
 

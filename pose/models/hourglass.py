@@ -1,7 +1,7 @@
 '''
-Hourglass network inserted in the pre-activated Resnet 
+Hourglass network inserted in the pre-activated Resnet
 Use lr=0.01 for current version
-(c) YANG, Wei 
+(c) YANG, Wei
 '''
 import torch.nn as nn
 import torch.nn.functional as F
@@ -43,7 +43,7 @@ class Bottleneck(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
- 
+
         # element-wise add
         out += residual
 
@@ -54,7 +54,7 @@ class Hourglass(nn.Module):
         super(Hourglass, self).__init__()
         self.depth = depth
         self.block = block
-        self.upsample = nn.UpsamplingNearest2d(scale_factor=2)
+        self.upsample = nn.Upsample(scale_factor=2)
         self.hg = self._make_hour_glass(block, num_blocks, planes, depth)
 
     def _make_residual(self, block, num_blocks, planes):
@@ -102,9 +102,9 @@ class HourglassNet(nn.Module):
         self.num_feats = 128
         self.num_stacks = num_stacks
 
-  
+
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
-        self.bn1 = nn.BatchNorm2d(self.inplanes) 
+        self.bn1 = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
 
         self.layer1 = self._make_residual(block, self.inplanes, blocks = 1)
@@ -116,7 +116,7 @@ class HourglassNet(nn.Module):
         # build hourglass modules
         ch = self.num_feats*block.expansion
         hg, res, fc, score, fc_, score_ = [], [], [], [], [], []
-        
+
         for i in range(num_stacks):
             hg.append(Hourglass(block, num_blocks, self.num_feats, 4))
             res.append(self._make_residual(block, self.num_feats, num_blocks))
@@ -129,7 +129,7 @@ class HourglassNet(nn.Module):
         self.res = nn.ModuleList(res)
         self.fc = nn.ModuleList(fc)
         self.score = nn.ModuleList(score)
-        self.fc_ = nn.ModuleList(fc_) 
+        self.fc_ = nn.ModuleList(fc_)
         self.score_ = nn.ModuleList(score_)
 
     def _make_residual(self, block, planes, blocks = 1, stride=1):
@@ -160,12 +160,12 @@ class HourglassNet(nn.Module):
         out = []
         x = self.conv1(x)
         x = self.bn1(x)
-        x = self.relu(x) 
+        x = self.relu(x)
 
-        x = self.layer1(x)  
+        x = self.layer1(x)
         x = self.maxpool(x)
-        x = self.layer2(x)  
-        x = self.layer3(x)  
+        x = self.layer2(x)
+        x = self.layer3(x)
 
         for i in range(self.num_stacks):
             y = self.hg[i](x)
