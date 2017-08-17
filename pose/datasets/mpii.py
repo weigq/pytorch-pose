@@ -118,6 +118,7 @@ class Mpii(data.Dataset):
 
         # Prepare image and groundtruth map
         inp = crop(img, c, s, [self.inp_res, self.inp_res], rot=r)
+        
         #f self.is_train:
          #  inp = color_normalize(inp, self.mean, self.std)
 
