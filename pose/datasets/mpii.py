@@ -115,10 +115,11 @@ class Mpii(data.Dataset):
                 img = torch.from_numpy(fliplr(img.numpy())).float()
                 pts = shufflelr(pts, width=img.size(2), dataset='mpii')
                 c[0] = img.size(2) - c[0]
+                
 
         # Prepare image and groundtruth map
         inp = crop(img, c, s, [self.inp_res, self.inp_res], rot=r)
-        
+
         #f self.is_train:
          #  inp = color_normalize(inp, self.mean, self.std)
 
