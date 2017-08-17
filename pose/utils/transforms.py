@@ -117,9 +117,15 @@ def transform_preds(coords, center, scale, res):
         coords[p, 0:2] = to_torch(transform(coords[p, 0:2], center, scale, res, 1, 0))
     return coords
 
-def crop(img, center, scale, res, rot=0):
-    # img: H*W*C
-    img = im_to_numpy(img)
+def crop(imgIn, center, scale, res, rot=0):
+    '''
+    imgIn>
+    type: ndarray
+    shape: C*H*W
+    '''
+    # transpose imgIn to H*W*C
+    img = imgIn.cpu().numpy()
+    img = np.transpose(img, (1,2,0))
 
     # Upper left point
     ul = np.array(transform([0, 0], center, scale, res, invert=1))

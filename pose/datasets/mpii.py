@@ -123,6 +123,8 @@ class Mpii(data.Dataset):
 
         # Generate ground truth
         tpts = pts.clone()
+
+        # the output of the net
         target = torch.zeros(nparts, self.out_res, self.out_res)
 
         for i in range(nparts):
