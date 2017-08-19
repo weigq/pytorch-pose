@@ -9,6 +9,7 @@ import numpy as np
 import json
 import random
 import math
+import scipy.misc
 
 import torch
 import torch.utils.data as data
@@ -105,7 +106,14 @@ class Mpii(data.Dataset):
 
         # For single-person pose estimation with a centered/scaled figure
         nparts = pts.size(0)  # = 16
-        img = load_image(img_path) # CxHxW
+        #img = load_image(img_path) # CxHxW
+        img = scipy.misc.imread(img_path)
+        img = np.transpose(img, (2, 0, 1)) # C*H*W
+        img = torch.from_numpy(img).float()
+        # normalization
+        if img.max() > 1:
+            img /= 255
+        
 
         r = 0
         if self.is_train:
