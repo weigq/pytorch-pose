@@ -202,7 +202,7 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f}'.format(
+        bar.suffix  = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.8f}'.format(
                     batch=i + 1,
                     size=len(train_loader),
                     data=data_time.val,
