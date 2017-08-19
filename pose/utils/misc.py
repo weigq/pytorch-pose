@@ -41,10 +41,3 @@ def save_pred(preds, checkpoint='checkpoint', filename='preds_valid.mat'):
     filepath = os.path.join(checkpoint, filename)
     scipy.io.savemat(filepath, mdict={'preds' : preds})
 
-
-def LRDecay(optimizer, epoch, lr):
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = lr * (0.2 ** (epoch // 24))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-    return lr

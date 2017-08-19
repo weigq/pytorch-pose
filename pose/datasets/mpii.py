@@ -45,8 +45,8 @@ class Mpii(data.Dataset):
                 self.valid.append(idx)
             else:
                 self.train.append(idx)
-        self.train = self.train[0:4000]
-        self.valid = self.valid[0:1000]
+        self.train = self.train[0:4]
+        self.valid = self.valid[0:1]
 
         self.mean, self.std = self._get_param()
 
