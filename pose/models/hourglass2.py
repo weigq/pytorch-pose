@@ -8,9 +8,9 @@ import torch.nn.functional as F
 import math
 # from .preresnet import BasicBlock, BottleNeck
 
-__all__ = ['HourglassNet', 'hg1', 'hg2', 'hg4', 'hg8']
+__all__ = ['HourglassNet2', 'hg21', 'hg22', 'hg24', 'hg28']
 
-class BottleNeck(nn.Module):
+class BottleNeck2(nn.Module):
     expansion = 2
 
     def __init__(self, inplanes, outplanes, stride=1, downsample=None):
@@ -49,7 +49,7 @@ class BottleNeck(nn.Module):
 
         return out
 
-class Hourglass(nn.Module):
+class Hourglass2(nn.Module):
     def __init__(self, block, num_blocks, planes, depth):
         super(Hourglass, self).__init__()
         self.depth = depth
@@ -93,10 +93,10 @@ class Hourglass(nn.Module):
         return self._hour_glass_forward(self.depth, x)
 
 
-class HourglassNet(nn.Module):
+class HourglassNet2(nn.Module):
     '''Hourglass model from Newell et al ECCV 2016'''
     def __init__(self, block, num_stacks=2, num_blocks=4, num_classes=16):
-        super(HourglassNet, self).__init__()
+        super(HourglassNet2, self).__init__()
 
         self.inplanes = 64
         self.num_feats = 128
@@ -180,18 +180,18 @@ class HourglassNet(nn.Module):
 
         return out
 
-def hg1(**kwargs):
-    model = HourglassNet(BottleNeck, num_stacks=1, num_blocks=8, **kwargs)
+def hg21(**kwargs):
+    model = HourglassNet2(BottleNeck2, num_stacks=1, num_blocks=8, **kwargs)
     return model
 
-def hg2(**kwargs):
-    model = HourglassNet(BottleNeck, num_stacks=2, num_blocks=4, **kwargs)
+def hg22(**kwargs):
+    model = HourglassNet2(BottleNeck2, num_stacks=2, num_blocks=4, **kwargs)
     return model
 
-def hg4(**kwargs):
-    model = HourglassNet(BottleNeck, num_stacks=4, num_blocks=2, **kwargs)
+def hg24(**kwargs):
+    model = HourglassNet2(BottleNeck2, num_stacks=4, num_blocks=2, **kwargs)
     return model
 
-def hg8(**kwargs):
-    model = HourglassNet(BottleNeck, num_stacks=8, num_blocks=1, **kwargs)
+def hg28(**kwargs):
+    model = HourglassNet2(BottleNeck2, num_stacks=8, num_blocks=1, **kwargs)
     return model
