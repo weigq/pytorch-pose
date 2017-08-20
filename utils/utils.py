@@ -4,7 +4,7 @@ import os
 import errno
 
 
-__all__ = ['LRDecay', 'AverageMeter', 'Mkdir']
+__all__ = ['LRDecay', 'AverageMeter', 'mkdir']
 
 
 def LRDecay(optimizer, epoch, lr):
@@ -37,7 +37,7 @@ class AverageMeter(object):
 #==========================================#
 #some operations of file 
 #==========================================#
-def Mkdir(dir):
+def mkdir(dir):
     try:
         os.makedirs(dir)
     except OSError as e:

@@ -22,7 +22,7 @@ from pose.utils.logger import Logger
 from pose.utils.evaluation import accuracy, final_preds
 from pose.utils.misc import save_checkpoint, save_pred
 
-from utils.utils import LRDecay, AverageMeter, Mkdir
+from utils.utils import LRDecay, AverageMeter, mkdir
 
 from pose.utils.osutils import isfile, isdir, join
 from pose.utils.imutils import batch_with_heatmap
@@ -46,7 +46,7 @@ def main(args):
 
     # create checkpoint dir
     if not isdir(args.checkpoint):
-        Mkdir(args.checkpoint)
+        mkdir(args.checkpoint)
 
     # create model
     print("==> creating model '{}'".format(args.arch))
