@@ -16,6 +16,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from torch.autograd import Variable
 
 from pose import Bar
 from pose.utils.logger import Logger
@@ -30,6 +31,8 @@ from pose.utils.transforms import fliplr, flip_back
 import pose.models as models
 import pose.datasets as dtsets
 
+
+from graphviz import Digraph
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -51,6 +54,8 @@ def main(args):
     # create model
     print("==> creating model '{}'".format(args.arch))
     model = models.__dict__[args.arch](num_classes=16)
+
+   
 
     # multi-GPU
     model = torch.nn.DataParallel(model).cuda()
@@ -154,6 +159,9 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
 
     # switch to train mode
     model.train()
+    #print(model)
+
+
 
     end = time.time()
 
@@ -308,6 +316,8 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
 
     bar.finish()
     return losses.avg, acces.avg, predictions
+
+
 
 if __name__ == '__main__':
 

@@ -95,21 +95,21 @@ class Hourglass2(nn.Module):
 
 class HourglassNet2(nn.Module):
     '''Hourglass model from Newell et al ECCV 2016'''
-    def __init__(self, block, num_stacks=2, num_blocks=4, num_classes=16):
+    def __init__(self, block=BottleNeck2, num_stacks=2, num_blocks=4, num_classes=16):
         super(HourglassNet2, self).__init__()
 
-        self.inplanes = 64
+        self.inplanes = 128
         self.num_feats = 128
         self.num_stacks = num_stacks
 
 
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=True)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=True)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_residual(block, self.inplanes, blocks = 1)
-        self.layer2 = self._make_residual(block, self.inplanes, blocks = 1)
-        self.layer3 = self._make_residual(block, self.num_feats, blocks = 1)
+        self.layer1 = self._make_residual(block, self.inplanes)
+        self.layer2 = self._make_residual(block, self.inplanes)
+        self.layer3 = self._make_residual(block, self.num_feats)
 
         self.maxpool = nn.MaxPool2d(2, stride=2)
 
@@ -132,7 +132,7 @@ class HourglassNet2(nn.Module):
         self.fc_ = nn.ModuleList(fc_)
         self.score_ = nn.ModuleList(score_)
 
-    def _make_residual(self, block, planes, blocks = 1, stride=1):
+    def _make_residual(self, block, out_planes, blocks=1, stride=1):
         '''a residual module, which returns layers with 2*planes features'''
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
