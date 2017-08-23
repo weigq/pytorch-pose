@@ -45,17 +45,17 @@ class Mpii(data.Dataset):
                 self.valid.append(idx)
             else:
                 self.train.append(idx)
-        self.train = self.train[0:4]
-        self.valid = self.valid[0:1]
+        self.train = self.train[0:4000]
+        self.valid = self.valid[0:1000]
 
         self.mean, self.std = self._get_param()
 
     def _get_param(self):
         paramFile = './data/mpii/mean.pth.tar'
         if isfile(paramFile):
-            #param = torch.load(paramFile)
+            param = torch.load(paramFile)
             #i = 1
-        #else:
+        else:
             mean = torch.zeros(3)
             std = torch.zeros(3)
             print("len of train: {}".format(len(self.train)))
