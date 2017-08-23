@@ -28,9 +28,11 @@ from utils.utils import LRDecay, AverageMeter, mkdir
 from pose.utils.osutils import isfile, isdir, join
 from pose.utils.imutils import batch_with_heatmap
 from pose.utils.transforms import fliplr, flip_back
-import pose.models as models
+
 import pose.datasets as dtsets
 
+
+import pose.models as models
 
 from graphviz import Digraph
 
