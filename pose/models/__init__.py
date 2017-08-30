@@ -1,2 +1,2 @@
-from .hourglass3 import *
+from .hourglass import *
 from .preresnet import *

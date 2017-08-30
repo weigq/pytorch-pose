@@ -12,7 +12,10 @@ from .imutils import *
 def color_normalize(x, mean, std):
     if x.size(0) == 1:
         x = x.repeat(3, x.size(1), x.size(2))
-    return (x - mean.view(3, 1, 1).expand_as(x)) #/ std.view(3, 1, 1).expand_as(x)
+    #return (x - mean.view(3, 1, 1).expand_as(x)) #/ std.view(3, 1, 1).expand_as(x)
+    for t, m, s in zip(x, mean, std):
+        t.sub_(m)
+    return x
 
 
 def flip_back(flip_output, dataset='mpii'):
@@ -105,9 +108,9 @@ def transform(pt, center, scale, res, invert=0, rot=0):
     t = get_transform(center, scale, res, rot=rot)
     if invert:
         t = np.linalg.inv(t)
-    new_pt = np.array([pt[0], pt[1], 1.]).T
+    new_pt = np.array([pt[0] - 1, pt[1] - 1, 1.]).T
     new_pt = np.dot(t, new_pt)
-    return new_pt[:2].astype(int)
+    return new_pt[:2].astype(int) + 1
 
 def transform_preds(coords, center, scale, res):
     # size = coords.size()

@@ -7,11 +7,12 @@ import errno
 __all__ = ['LRDecay', 'AverageMeter', 'mkdir']
 
 
-def LRDecay(optimizer, epoch, lr):
+def LRDecay(optimizer, epoch, lr, schedule, gamma):
     """Sets the learning rate to the initial LR decayed by 0.2 every 20 epochs"""
-    lr = lr * (0.2 ** (epoch // 25))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+    if epoch in schedule:
+        lr *= gamma
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
     return lr
 
 

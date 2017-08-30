@@ -15,11 +15,12 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torchvision.datasets as datasets
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
+
 from torch.autograd import Variable
 
 from pose import Bar
-from pose.utils.logger import Logger
+from pose.utils.logger import Logger, savefig
 from pose.utils.evaluation import accuracy, final_preds
 from pose.utils.misc import save_checkpoint, save_pred
 
@@ -98,7 +99,7 @@ def main(args):
         # open the log file
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
         # set names of log file
-        logger.set_names(['train-loss', 'val-loss', 'val-acc'])
+        logger.set_names(['Epoch', 'lr', 'train-loss', 'val-loss', 'train-acc', 'val-acc'])
 
     # using the fastest algorithm
     cudnn.benchmark = True
@@ -124,20 +125,22 @@ def main(args):
         save_pred(predictions, checkpoint=args.checkpoint)
         return
 
+    lr = args.lr
+
     for epoch in range(args.start_epoch, args.Epochs):
         # lr decay
-        lr = LRDecay(optimizer, epoch, args.lr)
+        lr = LRDecay(optimizer, epoch, lr, args.schedule, args.gamma)
 
         print('\nEpoch: %d | lr: %.8f' % (epoch, lr))
 
         # train for one epoch
-        train_loss = train(train_loader, model, criterion, optimizer, epoch - 1, args.debug)
+        train_loss, train_acc = train(train_loader, model, criterion, optimizer, args.debug, args.flip)
 
         # evaluate on validation set
         valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.debug, args.flip)
 
         # append logger file
-        logger.append([train_loss, valid_loss, valid_acc])
+        logger.append([epoch, lr, train_loss, valid_loss, train_acc, valid_acc])
 
         # remember best acc and save checkpoint
         is_best = valid_acc > bestAcc
@@ -154,10 +157,12 @@ def main(args):
     logger.plot()
     plt.savefig(os.path.join(args.checkpoint, 'log.eps'))
 
-def train(train_loader, model, criterion, optimizer, epoch, debug=False):
+def train(train_loader, model, criterion, optimizer, debug=False, flip=True):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
+    accs = AverageMeter()
+
 
     # switch to train mode
     model.train()
@@ -172,26 +177,40 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
     bar = Bar('Processing', max=len(train_loader))
     print("the length of train_loader: {}".format(len(train_loader)))
 
-    for i, (inputs, target) in enumerate(train_loader):
+    for i, (inputs, target, meta) in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        inputs = inputs.cuda()
-        target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(inputs)
-        target_var = torch.autograd.Variable(target)
+        #inputs = inputs.cuda()
+        #target = target.cuda(async=True)
+        input_var = torch.autograd.Variable(inputs.cuda())
+        target_var = torch.autograd.Variable(target.cuda(async=True))
 
         # compute output
         output = model(input_var)
+        score_map = output[-1].data.cpu()
+        # if flip:
+        #     flip_input_var = torch.autograd.Variable(
+        #             torch.from_numpy(fliplr(inputs.clone().numpy())).float().cuda(),
+        #             volatile=True
+        #         )
+        #     flip_output_var = model(flip_input_var)
+        #     flip_output = flip_back(flip_output_var[-1].data.cpu())
+        #     score_map += flip_output
+
+
 
         # Calculate intermediate loss
         loss = criterion(output[0], target_var)
         for j in range(1, len(output)):
             loss += criterion(output[j], target_var)
 
+        acc = accuracy(score_map, target, idx)
+
+
         if debug: # visualize groundtruth and predictions
             gt_batch_img = batch_with_heatmap(inputs, target)
-            pred_batch_img = batch_with_heatmap(inputs, output[-1].data)
+            pred_batch_img = batch_with_heatmap(inputs, score_map)
             if not gt_win or not pred_win:
                 ax1 = plt.subplot(121)
                 ax1.title.set_text('Groundtruth')
@@ -207,6 +226,7 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
 
         # measure accuracy and record loss
         losses.update(loss.data[0], inputs.size(0))
+        accs.update(acc[0], inputs.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -218,7 +238,7 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.8f}'.format(
+        bar.suffix  = '({batch}/{size}) Data: {data:.6f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.8f} | acc: {acc: .8f}'.format(
                     batch=i + 1,
                     size=len(train_loader),
                     data=data_time.val,
@@ -226,17 +246,18 @@ def train(train_loader, model, criterion, optimizer, epoch, debug=False):
                     total=bar.elapsed_td,
                     eta=bar.eta_td,
                     loss=losses.avg,
+                    acc=accs.avg
                     )
         bar.next()
 
     bar.finish()
-    return losses.avg
+    return losses.avg, accs.avg
 
 
 def validate(val_loader, model, criterion, debug=False, flip=True):
     batch_time = AverageMeter()
     losses = AverageMeter()
-    acces = AverageMeter()
+    accs = AverageMeter()
 
     # predictions
     predictions = torch.Tensor(val_loader.dataset.__len__(), 16, 2)
@@ -274,7 +295,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
         for o in output:
             loss += criterion(o, target_var)
         # target : 16*64*64
-        acc = accuracy(score_map.cuda(), target, idx)
+        acc = accuracy(score_map, target.cpu(), idx)
 
         # generate predictions
         preds = final_preds(score_map, meta['center'], meta['scale'], [64, 64])
@@ -298,7 +319,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
 
         # measure accuracy and record loss
         losses.update(loss.data[0], inputs.size(0))
-        acces.update(acc[0], inputs.size(0))
+        accs.update(acc[0], inputs.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -312,12 +333,12 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
                     total=bar.elapsed_td,
                     eta=bar.eta_td,
                     loss=losses.avg,
-                    acc=acces.avg
+                    acc=accs.avg
                     )
         bar.next()
 
     bar.finish()
-    return losses.avg, acces.avg, predictions
+    return losses.avg, accs.avg, predictions
 
 
 
@@ -326,7 +347,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='hg_pytorch training')
 
     ## General options
-    parser.add_argument('-dataPath',  default = '/home/guoqiang/hg_train/data/mpii/images/',
+    parser.add_argument('-dataPath',  default = '/data/weigq/mpii/images/',
                                       help = 'the path to images data')
 
     ## Model options
@@ -347,7 +368,7 @@ if __name__ == '__main__':
     parser.add_argument('--momentum', default = 0, type = float,
                                       help = 'momentum')
     parser.add_argument('--weight-decay', '--wd', default = 0, type = float,
-                                      help = 'weight decay (default: 1e-4)')
+                                      help = 'weight decay (default: 0)')
     parser.add_argument('--print-freq', '-p', default = 10, type = int,
                                       help = 'print frequency (default: 10)')
     parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar='PATH',
@@ -360,5 +381,12 @@ if __name__ == '__main__':
                                       help = 'show intermediate results')
     parser.add_argument('-f', '--flip', dest = 'flip', action = 'store_true',
                                       help = 'flip the input during validation')
+
+    '''traing oprions'''
+    parser.add_argument('--schedule', type=int, nargs='+', default=[60, 90],
+                                      help='decrease lr at these epochs')
+    parser.add_argument('--gamma',    type=float, default=0.1,
+                                      help='lr is multiplied by gamma')
+
 
     main(parser.parse_args())

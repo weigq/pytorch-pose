@@ -94,9 +94,9 @@ class Mpii(data.Dataset):
         img_path = os.path.join(self.img_path, a['img_paths'])
 
         pts = torch.Tensor(a['joint_self'])
-        pts[:,0:2] -= 1 # Convert pts to zero based
+        # pts[:,0:2] -= 1 # Convert pts to zero based
 
-        c = torch.Tensor(a['objpos']) - 1
+        c = torch.Tensor(a['objpos'])
         s = a['scale_provided']
 
         # Adjust center/scale slightly to avoid cropping limbs
@@ -118,7 +118,7 @@ class Mpii(data.Dataset):
         r = 0
         if self.is_train:
             s = s*torch.randn(1).mul_(sf).add_(1).clamp(1-sf,1+sf)[0]
-            r = torch.randn(1).mul_(rf).clamp(-2*rf,2*rf)[0] if random.random() <= 0.9 else 0
+            r = torch.randn(1).mul_(rf).clamp(-2*rf,2*rf)[0] if random.random() <= 0.6 else 0
 
             # Flip
             if random.random() <= 0.5:
@@ -127,11 +127,15 @@ class Mpii(data.Dataset):
                 c[0] = img.size(2) - c[0]
 
 
+            img[0, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+            img[1, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+            img[2, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+
         # Prepare image and groundtruth map
         inp = crop(img, c, s, [self.inp_res, self.inp_res], rot=r)
 
         #f self.is_train:
-         #  inp = color_normalize(inp, self.mean, self.std)
+        inp = color_normalize(inp, self.mean, self.std)
 
         # Generate ground truth
         tpts = pts.clone()
@@ -140,9 +144,9 @@ class Mpii(data.Dataset):
         target = torch.zeros(nparts, self.out_res, self.out_res)
 
         for i in range(nparts):
-            if tpts[i, 2] > 0:
-                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2], c, s, [self.out_res, self.out_res], rot=r))
-                target[i] = draw_gaussian(target[i], tpts[i], self.sigma)
+            if tpts[i, 0] > 0:
+                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [self.out_res, self.out_res], rot=r))
+                target[i] = draw_gaussian(target[i], tpts[i] - 1, self.sigma)
 
         # Meta info
         meta = {'index' : index,
@@ -151,17 +155,17 @@ class Mpii(data.Dataset):
                 'pts' : pts,
                 'tpts' : tpts}
 
-        if self.is_train:
+        # if self.is_train:
 
-            # Color
-            inp[0, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
-            inp[1, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
-            inp[2, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+        #     # Color
+        #     inp[0, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+        #     inp[1, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
+        #     inp[2, :, :].mul_(random.uniform(0.8, 1.2)).clamp_(0, 1)
 
 
-            return inp, target
-        else:
-            return inp, target, meta
+        #     return inp, target
+        # else:
+        return inp, target, meta
 
     def __len__(self):
         if self.is_train:
