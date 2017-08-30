@@ -364,10 +364,7 @@ if __name__ == '__main__':
     parser.add_argument('--test-batch', default = 6, type = int,
                                       help = 'test batchsize')
 
-    parser.add_argument('--momentum', default = 0, type = float,
-                                      help = 'momentum')
-    parser.add_argument('--weight-decay', '--wd', default = 0, type = float,
-                                      help = 'weight decay (default: 0)')
+    
     parser.add_argument('--print-freq', '-p', default = 10, type = int,
                                       help = 'print frequency (default: 10)')
     parser.add_argument('-c', '--checkpoint', default = 'checkpoint', type = str, metavar='PATH',
@@ -381,13 +378,19 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--flip', dest = 'flip', action = 'store_true',
                                       help = 'flip the input during validation')
 
-    '''traing oprions'''
+    # ==============================
+    # runing options
+    # ==============================
     parser.add_argument('--schedule', type=int, nargs='+', default=[60, 90],
                                       help='decrease lr at these epochs')
     parser.add_argument('--gamma',    type=float, default=0.1,
                                       help='lr is multiplied by gamma')
     parser.add_argument('--lr',       default = 2.5e-4, type = float,
                                       help = 'initial learning rate')
+    parser.add_argument('--momentum', default = 0, type = float,
+                                      help = 'momentum')
+    parser.add_argument('--weight-decay', '--wd', default = 0, type = float,
+                                      help = 'weight decay (default: 0)')
 
 
     main(parser.parse_args())
