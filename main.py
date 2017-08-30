@@ -363,8 +363,7 @@ if __name__ == '__main__':
                                       help = 'train batchsize')
     parser.add_argument('--test-batch', default = 6, type = int,
                                       help = 'test batchsize')
-    parser.add_argument('--lr',       default = 2.5e-4, type = float,
-                                      help = 'initial learning rate')
+
     parser.add_argument('--momentum', default = 0, type = float,
                                       help = 'momentum')
     parser.add_argument('--weight-decay', '--wd', default = 0, type = float,
@@ -387,6 +386,8 @@ if __name__ == '__main__':
                                       help='decrease lr at these epochs')
     parser.add_argument('--gamma',    type=float, default=0.1,
                                       help='lr is multiplied by gamma')
+    parser.add_argument('--lr',       default = 2.5e-4, type = float,
+                                      help = 'initial learning rate')
 
 
     main(parser.parse_args())
