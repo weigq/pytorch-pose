@@ -6,10 +6,11 @@ import errno
 
 __all__ = ['LRDecay', 'AverageMeter', 'mkdir']
 
-
+#==========================================
+#      some operations of training
+#==========================================
 def LRDecay(optimizer, epoch, lr, schedule, gamma):
-    """Sets the learning rate to the initial LR decayed by 0.2 every 20 epochs"""
-    if epoch in schedule:
+    if epoch >= schedule:
         lr *= gamma
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
@@ -35,9 +36,9 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-#==========================================#
-#some operations of file 
-#==========================================#
+#==========================================
+#      some operations of os/file
+#==========================================
 def mkdir(dir):
     try:
         os.makedirs(dir)
