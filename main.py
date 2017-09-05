@@ -21,8 +21,8 @@ from pose.utils.evaluation import accuracy, final_preds
 from pose.utils.misc import save_checkpoint, save_pred
 
 # some functions of setting and adjusting training process
-from utils.utils import LRDecay, AverageMeter, mkdir
-from utils.logger import Logger, savefig
+from utils.utils import LRDecay, AverageMeter, mkdir, savefig
+from utils.logger import Logger
 
 
 from pose.utils.osutils import isfile, isdir, join
@@ -93,14 +93,14 @@ def main(args):
 
     # Data loading code
     train_loader = torch.utils.data.DataLoader(
-        dataset=dtsets.Mpii('data/mpii/mpii_annotations.json', args.dataPath),
+        dataset=dtsets.Mpii('data/mpii/results.json', args.dataPath),
         batch_size=args.train_batch,
         shuffle=True,
         num_workers=args.jobs,
         pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        dataset=dtsets.Mpii('data/mpii/mpii_annotations.json', args.dataPath, train=False),
+        dataset=dtsets.Mpii('data/mpii/results.json', args.dataPath, is_train=False),
         batch_size=args.test_batch,
         shuffle=False,
         num_workers=args.jobs,
@@ -120,7 +120,7 @@ def main(args):
         train_loss, train_acc = train(train_loader, model, criterion, optimizer)
 
         # evaluate on validation set
-        valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.debug, args.flip)
+        valid_loss, valid_acc, predictions = validate(val_loader, model, criterion, args.debug) # , args.flip)
 
         # append logger file
         logger.append([epoch, lr, train_loss, valid_loss, train_acc, valid_acc])
@@ -163,23 +163,21 @@ def train(train_loader, model, criterion, optimizer):
 
         # compute output
         output = model(input_var)
+        print("..>>>>{}.".format(type(output)))
+
         score_map = output[-1].data.cpu()
 
         # Calculate intermediate loss
-        loss = criterion(output[0], target_var)
+        print("..{}.".format(type(output)))
+        loss_pts = criterion(output[0], target_var)
         for j in range(1, len(output)):
-            loss += criterion(output[j], target_var)
+            loss_pts += criterion(output[j][:16], target_var)
 
-        acc = accuracy(score_map, target, idx)
-        
+        acc_pts = accuracy(score_map[:, 0:16, :, :], target, idx)
+        acc = acc_pts
         # measure accuracy and save loss
-        print("loss: .{}".format(loss))
-        print("\nloss: .{}".format(loss.data))
-        print("\nloss: .{}".format(loss.data[0]))
-        loss.data[0] = loss.data[0] + 0.1
-        print("\nloss: .{}".format(loss.data[0]))
-        raw_input("{")
 
+        loss = loss_pts
 
         train_loss.update(loss.data[0], inp.size(0))
         train_acc.update(acc[0], inp.size(0))
@@ -210,7 +208,7 @@ def train(train_loader, model, criterion, optimizer):
     return train_loss.avg, train_acc.avg
 
 
-def validate(val_loader, model, criterion, debug=False, flip=True):
+def validate(val_loader, model, criterion, debug=False, flip=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     accs = AverageMeter()
@@ -236,6 +234,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
         output = model(input_var)
         # score_map: 16*64*64
         score_map = output[-1].data.cpu()
+
         if flip:
             flip_input_var = torch.autograd.Variable(
                     torch.from_numpy(fliplr(inputs.clone().numpy())).float().cuda(),
@@ -248,20 +247,21 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
 
 
         loss = 0
+        loss_pts = 0
         for o in output:
-            loss += criterion(o, target_var)
+            loss_pts += criterion(o[:16], target_var)
         # target : 16*64*64
-        acc = accuracy(score_map, target.cpu(), idx)
+        acc_pts = accuracy(score_map[:16], target.cpu(), idx)
 
         # generate predictions
-        preds = final_preds(score_map, meta['center'], meta['scale'], [64, 64])
-        for n in range(score_map.size(0)):
+        preds = final_preds(score_map[:16], meta['center'], meta['scale'], [64, 64])
+        for n in range(score_map[:16].size(0)):
             predictions[meta['index'][n], :, :] = preds[n, :, :]
 
 
         if debug:
             gt_batch_img = batch_with_heatmap(inputs, target)
-            pred_batch_img = batch_with_heatmap(inputs, score_map)
+            pred_batch_img = batch_with_heatmap(inputs, score_map[:16])
             if not gt_win or not pred_win:
                 plt.subplot(121)
                 gt_win = plt.imshow(gt_batch_img)
@@ -273,6 +273,7 @@ def validate(val_loader, model, criterion, debug=False, flip=True):
             plt.pause(.05)
             plt.draw()
 
+        loss = loss_pts
         # measure accuracy and record loss
         losses.update(loss.data[0], inputs.size(0))
         accs.update(acc[0], inputs.size(0))
@@ -305,9 +306,9 @@ if __name__ == '__main__':
     # ============================================================
     #                       general options
     # ============================================================
-    parser.add_argument('-dataPath',          type=str, default='/data/weigq/mpii/images/', help='path to images data')
-    parser.add_argument('-checkpoint',        type=str, default='checkpoint',               help='path to save checkpoint')
-    parser.add_argument('-resume',            type=str, default='',                         help='path to latest checkpoint')
+    parser.add_argument('--dataPath',          type=str, default='/data/weigq/mpii/images/', help='path to images data')
+    parser.add_argument('--checkpoint',        type=str, default='checkpoint',               help='path to save checkpoint')
+    parser.add_argument('--resume',            type=str, default='',                         help='path to latest checkpoint')
     parser.add_argument('-e', '--evaluate',   dest='evaluate', action='store_true',         help='evaluate on val set')
     parser.add_argument('-d', '--debug',      dest='debug',    action='store_true',         help='visualization')
     parser.add_argument('-f', '--flip',       dest='flip',     action='store_true',         help='flip the image')

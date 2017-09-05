@@ -5,6 +5,8 @@ import torch.nn as nn
 import numpy as np
 import scipy.misc
 
+from PIL import Image
+
 from .misc import *
 
 def im_to_numpy(img):
@@ -30,6 +32,12 @@ def load_image(img_path):
     if img.max() > 1:
         img /= 255
     return img
+
+def load_img(img_path, transform):
+    img = Image.open(img_path)
+    img = transform(img)
+    return img.type(torch.FloatTensor)
+
 
 def resize(img, owidth, oheight):
     img = im_to_numpy(img)
@@ -57,38 +65,49 @@ def gaussian(shape=(7,7),sigma=1):
     h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
     return to_torch(h).float()
 
-def draw_gaussian(imgIn, pt, sigma):
+def draw_gaussian(img_in, pt, sigma):
     '''
     Draw a 2D gaussian
     imgIn: tensot
     '''
     # Adopted from https://github.com/anewell/pose-hg-train/blob/master/src/pypose/draw.py
-    img = imgIn.cpu().numpy()
+    img = img_in.cpu().numpy()
 
     # Check that any part of the gaussian is in-bounds
     ul = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
-    br = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
-    if (ul[0] >= img.shape[1] or ul[1] >= img.shape[0] or
-            br[0] < 0 or br[1] < 0):
-        # If not, just return the image as is in Tensor type
+    br = [int(pt[0] + 3 * sigma), int(pt[1] + 3 * sigma)] 
+    if (ul[0] >= img.shape[1] or ul[1] >= img.shape[0] or br[0] < 0 or br[1] < 0):
         return torch.from_numpy(img)
 
     # Generate gaussian
     size = 6 * sigma + 1
-    x = np.arange(0, size, 1, float)
+    x = np.arange(0, size, 1, float)# .reshape(size, 1)
     y = x[:, np.newaxis]
     x0 = y0 = size // 2
     # The gaussian is not normalized, we want the center value to equal 1
     g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
 
     # Usable gaussian range
-    g_x = max(0, -ul[0]), min(br[0], img.shape[1]) - ul[0]
-    g_y = max(0, -ul[1]), min(br[1], img.shape[0]) - ul[1]
+    g_x = max(0, -ul[0]), min(br[0], img.shape[1] - 1) - ul[0]
+    g_y = max(0, -ul[1]), min(br[1], img.shape[0] - 1) - ul[1]
     # Image range
-    img_x = max(0, ul[0]), min(br[0], img.shape[1])
-    img_y = max(0, ul[1]), min(br[1], img.shape[0])
+    img_x = max(0, ul[0]), min(br[0], img.shape[1] - 1)
+    img_y = max(0, ul[1]), min(br[1], img.shape[0] - 1)
+    g = g[g_y[0]:g_y[1] + 1, g_x[0]:g_x[1] + 1]
+    # print("g:>>{}".format(g))
 
-    img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+    g_torch = torch.from_numpy(g).float()
+    mask =  torch.ge(g_torch, 
+        torch.from_numpy(img[img_y[0]:img_y[1] + 1, img_x[0]:img_x[1] + 1])).float()
+    g = g_torch.mul_(mask).cpu().numpy()
+    # print("g..{}".format(g))
+    # raw_input("lll")
+    # for item n 
+    # img[img_y[0]:img_y[1] + 1, img_x[0]:img_x[1] + 1] = g[g_y[0]:g_y[1] + 1, g_x[0]:g_x[1] + 1]
+    # print(img)
+    img[img_y[0]:img_y[1] + 1, img_x[0]:img_x[1] + 1] += g[: , :]
+    # print("?????{}".format(img))
+
     return torch.from_numpy(img)
 
 # =============================================================================

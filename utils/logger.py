@@ -1,4 +1,4 @@
-'''data logger'''
+'''functions about data logger and results saving'''
 
 from __future__ import absolute_import
 
@@ -7,19 +7,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-__all__ = ['Logger', 'savefig']
-
-def savefig(fname, dpi=None):
-    dpi = 150 if dpi == None else dpi
-    plt.savefig(fname, dpi=dpi)
-    
-def plot_overlap(logger, names=None):
-    names = logger.names if names == None else names
-    numbers = logger.numbers
-    for _, name in enumerate(names):
-        x = np.arange(len(numbers[name]))
-        plt.plot(x, np.asarray(numbers[name]))
-    return [logger.title + '(' + name + ')' for name in names]
+__all__ = ['Logger']
 
 class Logger(object):
     '''Save training process to log file with simple plot function.'''
@@ -83,21 +71,3 @@ class Logger(object):
         if self.file is not None:
             self.file.close()
 
-
-class LoggerMonitor(object):
-    '''Load and visualize multiple logs.'''
-    def __init__ (self, paths):
-        '''paths is a distionary with {name:filepath} pair'''
-        self.loggers = []
-        for title, path in paths.items():
-            logger = Logger(path, title=title, resume=True)
-            self.loggers.append(logger)
-
-    def plot(self, names=None):
-        plt.figure()
-        plt.subplot(121)
-        legend_text = []
-        for logger in self.loggers:
-            legend_text += plot_overlap(logger, names)
-        plt.legend(legend_text, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        plt.grid(True)

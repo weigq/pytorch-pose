@@ -3,8 +3,7 @@ from __future__ import absolute_import
 import os
 import errno
 
-
-__all__ = ['LRDecay', 'AverageMeter', 'mkdir']
+__all__ = ['LRDecay', 'AverageMeter', 'mkdir', 'savefig']
 
 #==========================================
 #      some operations of training
@@ -15,7 +14,6 @@ def LRDecay(optimizer, epoch, lr, schedule, gamma):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
     return lr
-
 
 
 class AverageMeter(object):
@@ -34,6 +32,12 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+def savefig(fname, dpi=None):
+    dpi = 300 if dpi == None else dpi
+    plt.savefig(fname, dpi=dpi)
+    
+
 
 
 #==========================================
